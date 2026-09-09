@@ -39,6 +39,9 @@ public class Atencion {
         this.estado = estado;
         this.fechaCreacion = fecha;
     }
+    public Long getId(){
+        return id;
+    }
 
     public String getPacienteId(){
         return pacienteId;

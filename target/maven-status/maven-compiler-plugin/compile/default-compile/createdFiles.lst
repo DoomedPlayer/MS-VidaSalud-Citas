@@ -1,0 +1,7 @@
+com\BinarySeint\vsCitas\VsCitasApplication.class
+com\BinarySeint\vsCitas\classes\EstadoAtencion.class
+com\BinarySeint\vsCitas\service\CitasService.class
+com\BinarySeint\vsCitas\classes\Atencion.class
+com\BinarySeint\vsCitas\service\CitasEventProducer.class
+com\BinarySeint\vsCitas\repository\AtencionRepository.class
+com\BinarySeint\vsCitas\controller\CitasController.class

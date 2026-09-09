@@ -11,17 +11,21 @@ import com.BinarySeint.vsCitas.repository.AtencionRepository;
 public class CitasService {
 
     private final AtencionRepository atencionRepository;
+    private final CitasEventProducer eventProducer;
 
-    public CitasService(AtencionRepository atencionRepository) {
+    public CitasService(AtencionRepository atencionRepository, CitasEventProducer eventProducer) {
         this.atencionRepository = atencionRepository;
+        this.eventProducer=eventProducer;
     }
 
     @Transactional
     public Atencion crearAtencion(Atencion atencion) {
         atencion.setEstado(EstadoAtencion.SOLICITADA);
-        // Aquí a futuro deberás comunicarte con ms-vidasalud-catalog para verificar si el cupo existe
-        // y publicar un evento en el tópico appointments.events de Kafka[cite: 1]
-        return atencionRepository.save(atencion);
+        Atencion guardada = atencionRepository.save(atencion);
+    
+        eventProducer.publicarEvento(guardada);
+        
+        return guardada;
     }
 
     public Atencion obtenerAtencion(Long id) {
@@ -44,7 +48,11 @@ public class CitasService {
         // porque el cupo del box disminuye al confirmar la atención[cite: 1]
 
         // Aquí también enviarías un mensaje asíncrono (cola) a RabbitMQ para la notificación al paciente y ticket al box[cite: 1]
+        Atencion actualizada = atencionRepository.save(atencion);
 
-        return atencionRepository.save(atencion);
+        // Publicamos el evento del cambio de estado al tópico appointments.events[cite: 1]
+        eventProducer.publicarEvento(actualizada);
+
+        return actualizada;
     }
 }
