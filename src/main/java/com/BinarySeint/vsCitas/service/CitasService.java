@@ -1,5 +1,10 @@
 package com.BinarySeint.vsCitas.service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,11 +17,17 @@ public class CitasService {
 
     private final AtencionRepository atencionRepository;
     private final CitasEventProducer eventProducer;
+    private final CatalogFeignClient catalogClient;
+    private final RabbitTemplate rabbitTemplate;
 
-    public CitasService(AtencionRepository atencionRepository, CitasEventProducer eventProducer) {
+    public CitasService(AtencionRepository atencionRepository, CitasEventProducer eventProducer,CatalogFeignClient catalogClient,
+                              RabbitTemplate rabbitTemplate) {
         this.atencionRepository = atencionRepository;
-        this.eventProducer=eventProducer;
+        this.eventProducer = eventProducer;
+        this.catalogClient = catalogClient;
+        this.rabbitTemplate = rabbitTemplate;
     }
+    
 
     @Transactional
     public Atencion crearAtencion(Atencion atencion) {
@@ -43,14 +54,25 @@ public class CitasService {
         }
 
         atencion.setEstado(nuevoEstado);
-        
-        // Si el nuevoEstado es CONFIRMADA, aquí deberás enviar un request a ms-vidasalud-catalog
-        // porque el cupo del box disminuye al confirmar la atención[cite: 1]
 
-        // Aquí también enviarías un mensaje asíncrono (cola) a RabbitMQ para la notificación al paciente y ticket al box[cite: 1]
+        if (nuevoEstado == EstadoAtencion.CONFIRMADA) {
+            catalogClient.consumirCupo(atencion.getCupoId());
+        }
+
         Atencion actualizada = atencionRepository.save(atencion);
 
-        // Publicamos el evento del cambio de estado al tópico appointments.events[cite: 1]
+        Map<String, Object> envelope = new HashMap<>();
+        envelope.put("traceId", UUID.randomUUID().toString());
+        envelope.put("data", actualizada);
+
+        if (nuevoEstado == EstadoAtencion.CONFIRMADA) {
+            rabbitTemplate.convertAndSend("cmd.direct", "email.send", envelope);
+        } else if (nuevoEstado == EstadoAtencion.EN_ESPERA) {
+            rabbitTemplate.convertAndSend("cmd.direct", "admission.ticket", envelope);
+        } else if (nuevoEstado == EstadoAtencion.CERRADA) {
+            rabbitTemplate.convertAndSend("cmd.direct", "record.gen", envelope);
+        }
+
         eventProducer.publicarEvento(actualizada);
 
         return actualizada;

@@ -31,7 +31,7 @@ public class Atencion {
         this.fechaCreacion = LocalDateTime.now();
         this.estado = EstadoAtencion.SOLICITADA; 
     }
-    public void Atencion(Long id,String pacienteId,Long prestacionId,Long cupoId,EstadoAtencion estado, LocalDateTime fecha){
+    public Atencion(Long id,String pacienteId,Long prestacionId,Long cupoId,EstadoAtencion estado, LocalDateTime fecha){
         this.id = id;
         this.pacienteId=pacienteId;
         this.prestacionId = prestacionId;
