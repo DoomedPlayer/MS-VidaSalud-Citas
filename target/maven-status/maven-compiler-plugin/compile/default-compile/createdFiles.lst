@@ -5,3 +5,4 @@ com\BinarySeint\vsCitas\classes\Atencion.class
 com\BinarySeint\vsCitas\service\CitasEventProducer.class
 com\BinarySeint\vsCitas\repository\AtencionRepository.class
 com\BinarySeint\vsCitas\controller\CitasController.class
+com\BinarySeint\vsCitas\service\CatalogFeignClient.class

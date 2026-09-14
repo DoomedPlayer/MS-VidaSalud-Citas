@@ -28,8 +28,6 @@ public class Atencion {
     private LocalDateTime fechaCreacion;
 
     public Atencion() {
-        this.fechaCreacion = LocalDateTime.now();
-        this.estado = EstadoAtencion.SOLICITADA; 
     }
     public Atencion(Long id,String pacienteId,Long prestacionId,Long cupoId,EstadoAtencion estado, LocalDateTime fecha){
         this.id = id;
@@ -74,4 +72,13 @@ public class Atencion {
         this.fechaCreacion=fecha;
     }
 
+    @PrePersist
+    protected void onCreate() {
+        if (this.fechaCreacion == null) {
+            this.fechaCreacion = LocalDateTime.now();
+        }
+        if (this.estado == null) {
+            this.estado = EstadoAtencion.SOLICITADA;
+        }
+    }
 }
