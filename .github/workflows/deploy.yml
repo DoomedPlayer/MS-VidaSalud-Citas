@@ -50,7 +50,6 @@ jobs:
 
       - name: Desplegar vía AWS Systems Manager
         run: |
-          # 1. Definimos las instrucciones a ejecutar en el servidor
           COMMANDS='
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
             cd /infra/apps
@@ -59,7 +58,7 @@ jobs:
             sudo docker system prune -f
           '
           
-          # 2. Enviamos el comando a SSM
+          # Enviamos el comando
           COMMAND_ID=$(aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --targets "Key=instanceIds,Values=${{ secrets.AWS_INSTANCE_ID }}" \
@@ -67,4 +66,24 @@ jobs:
             --query "Command.CommandId" \
             --output text)
             
-          echo "Comando enviado a la instancia con ID de ejecución: $COMMAND_ID"
+          echo "Comando enviado. ID: $COMMAND_ID"
+          echo "Esperando a que EC2 termine la ejecución..."
+          
+          # Hacemos que GitHub espere hasta que el comando termine (éxito o falla)
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ secrets.AWS_INSTANCE_ID }}"
+            
+          # Imprimimos los logs (Output y Errores) directo en GitHub Actions
+          echo "--- LOGS DEL SERVIDOR EC2 ---"
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ secrets.AWS_INSTANCE_ID }}" \
+            --query "StandardOutputContent" \
+            --output text
+            
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ secrets.AWS_INSTANCE_ID }}" \
+            --query "StandardErrorContent" \
+            --output text
