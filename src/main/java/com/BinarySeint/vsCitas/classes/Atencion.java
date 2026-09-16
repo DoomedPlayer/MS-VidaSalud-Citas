@@ -72,6 +72,7 @@ public class Atencion {
         this.fechaCreacion=fecha;
     }
 
+    
     @PrePersist
     protected void onCreate() {
         if (this.fechaCreacion == null) {
