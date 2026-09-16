@@ -3,7 +3,7 @@ name: Deploy Microservice to AWS
 on:
   push:
     branches:
-      - main
+      - deploy
 
 env:
   AWS_REGION: us-east-1
