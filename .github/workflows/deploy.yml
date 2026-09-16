@@ -52,11 +52,11 @@ jobs:
         run: |
           # 1. Definimos las instrucciones a ejecutar en el servidor
           COMMANDS='
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
             cd /infra/apps
-            docker-compose pull ${{ env.SERVICE_NAME }}
-            docker-compose up -d --no-deps --build ${{ env.SERVICE_NAME }}
-            docker system prune -f
+            sudo docker-compose pull ${{ env.SERVICE_NAME }}
+            sudo docker-compose up -d --no-deps --build ${{ env.SERVICE_NAME }}
+            sudo docker system prune -f
           '
           
           # 2. Enviamos el comando a SSM
