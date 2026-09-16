@@ -1,6 +1,8 @@
 package com.BinarySeint.vsCitas.service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -16,25 +18,34 @@ import com.BinarySeint.vsCitas.repository.AtencionRepository;
 public class CitasService {
 
     private final AtencionRepository atencionRepository;
-    private final CitasEventProducer eventProducer;
     private final CatalogFeignClient catalogClient;
-    private final RabbitTemplate rabbitTemplate;
+    private final NotifyClient notifyClient;
+    private final AuditClient auditClient;
+    private final ReportClient reportClient;
 
-    public CitasService(AtencionRepository atencionRepository, CitasEventProducer eventProducer,CatalogFeignClient catalogClient,
-                              RabbitTemplate rabbitTemplate) {
+    public CitasService(AtencionRepository atencionRepository, 
+                        CatalogFeignClient catalogClient,
+                        NotifyClient notifyClient, 
+                        AuditClient auditClient, 
+                        ReportClient reportClient) {
         this.atencionRepository = atencionRepository;
-        this.eventProducer = eventProducer;
         this.catalogClient = catalogClient;
-        this.rabbitTemplate = rabbitTemplate;
+        this.notifyClient = notifyClient;
+        this.auditClient = auditClient;
+        this.reportClient = reportClient;
     }
-    
 
     @Transactional
     public Atencion crearAtencion(Atencion atencion) {
         atencion.setEstado(EstadoAtencion.SOLICITADA);
         Atencion guardada = atencionRepository.save(atencion);
     
-        eventProducer.publicarEvento(guardada);
+        auditClient.registrarEventoAuditoria(guardada);
+
+        Map<String, String> eventoReporte = new HashMap<>();
+        eventoReporte.put("estado", guardada.getEstado().name());
+        eventoReporte.put("prestacionId", String.valueOf(guardada.getPrestacionId()));
+        reportClient.registrarEventoReporte(eventoReporte);
         
         return guardada;
     }
@@ -66,15 +77,35 @@ public class CitasService {
         envelope.put("data", actualizada);
 
         if (nuevoEstado == EstadoAtencion.CONFIRMADA) {
-            rabbitTemplate.convertAndSend("cmd.direct", "email.send", envelope);
+            notifyClient.enviarEmail(envelope);
         } else if (nuevoEstado == EstadoAtencion.EN_ESPERA) {
-            rabbitTemplate.convertAndSend("cmd.direct", "admission.ticket", envelope);
+            notifyClient.emitirTicket(envelope);
         } else if (nuevoEstado == EstadoAtencion.CERRADA) {
-            rabbitTemplate.convertAndSend("cmd.direct", "record.gen", envelope);
+            notifyClient.generarPdf(envelope);
         }
 
-        eventProducer.publicarEvento(actualizada);
+        auditClient.registrarEventoAuditoria(actualizada);
+
+        Map<String, String> eventoReporte = new HashMap<>();
+        eventoReporte.put("estado", actualizada.getEstado().name());
+        reportClient.registrarEventoReporte(eventoReporte);
 
         return actualizada;
+    }
+    public List<Atencion> listarAtenciones(String statusStr, LocalDateTime from, LocalDateTime to) {
+        EstadoAtencion estado = null;
+        if (statusStr != null && !statusStr.isEmpty()) {
+            estado = EstadoAtencion.valueOf(statusStr.toUpperCase());
+        }
+
+        if (estado != null && from != null && to != null) {
+            return atencionRepository.findByEstadoAndFechaHoraBetween(estado, from, to);
+        } else if (from != null && to != null) {
+            return atencionRepository.findByFechaHoraBetween(from, to);
+        } else if (estado != null) {
+            return atencionRepository.findByEstado(estado);
+        } else {
+            return atencionRepository.findAll();
+        }
     }
 }

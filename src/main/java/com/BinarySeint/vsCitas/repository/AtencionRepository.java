@@ -11,5 +11,9 @@ import java.util.List;
 
 @Repository
 public interface AtencionRepository extends JpaRepository<Atencion, Long> {
-    List<Atencion> findByEstadoAndFechaCreacionBetween(EstadoAtencion estado, LocalDateTime from, LocalDateTime to);
+    List<Atencion> findByEstadoAndFechaHoraBetween(EstadoAtencion estado, LocalDateTime from, LocalDateTime to);
+
+    List<Atencion> findByFechaHoraBetween(LocalDateTime from, LocalDateTime to);
+
+    List<Atencion> findByEstado(EstadoAtencion estado);
 }
