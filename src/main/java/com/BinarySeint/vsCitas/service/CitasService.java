@@ -40,8 +40,6 @@ public class CitasService {
         atencion.setEstado(EstadoAtencion.SOLICITADA);
         Atencion guardada = atencionRepository.save(atencion);
     
-        auditClient.registrarEventoAuditoria(guardada);
-
         Map<String, String> eventoReporte = new HashMap<>();
         eventoReporte.put("estado", guardada.getEstado().name());
         eventoReporte.put("prestacionId", String.valueOf(guardada.getPrestacionId()));
