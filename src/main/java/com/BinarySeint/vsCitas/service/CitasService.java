@@ -46,7 +46,15 @@ public class CitasService {
         eventoReporte.put("estado", guardada.getEstado().name());
         eventoReporte.put("prestacionId", String.valueOf(guardada.getPrestacionId()));
         reportClient.registrarEventoReporte(eventoReporte);
-        
+        Map<String, Object> eventoCreacion = new HashMap<>();
+        eventoCreacion.put("accion", "CREACION_CITA");
+        eventoCreacion.put("usuarioId", guardada.getPacienteId());
+        eventoCreacion.put("entidadId", "Citas_Microservicio");
+        eventoCreacion.put("origenIp", "127.0.0.1"); // O la IP real si la capturas
+        eventoCreacion.put("detalles", "Cita solicitada exitosamente.");
+
+        auditClient.registrarEventoAuditoria(eventoCreacion);
+                
         return guardada;
     }
 
@@ -84,7 +92,14 @@ public class CitasService {
             notifyClient.generarPdf(envelope);
         }
 
-        auditClient.registrarEventoAuditoria(actualizada);
+        Map<String, Object> eventoCambio = new HashMap<>();
+        eventoCambio.put("accion", "CAMBIO_ESTADO_" + actualizada.getEstado().name());
+        eventoCambio.put("usuarioId", "Recepcion");
+        eventoCambio.put("entidadId", "Citas_Microservicio");
+        eventoCambio.put("origenIp", "127.0.0.1");
+        eventoCambio.put("detalles", "La cita cambió de estado a " + actualizada.getEstado().name());
+
+        auditClient.registrarEventoAuditoria(eventoCambio);
 
         Map<String, String> eventoReporte = new HashMap<>();
         eventoReporte.put("estado", actualizada.getEstado().name());
