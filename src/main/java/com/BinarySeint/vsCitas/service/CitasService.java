@@ -99,9 +99,9 @@ public class CitasService {
         }
 
         if (estado != null && from != null && to != null) {
-            return atencionRepository.findByEstadoAndFechaHoraBetween(estado, from, to);
+            return atencionRepository.findByEstadoAndFechaCreacionBetween(estado, from, to);
         } else if (from != null && to != null) {
-            return atencionRepository.findByFechaHoraBetween(from, to);
+            return atencionRepository.findByFechaCreacionBetween(from, to);
         } else if (estado != null) {
             return atencionRepository.findByEstado(estado);
         } else {
