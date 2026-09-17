@@ -3,6 +3,8 @@ package com.BinarySeint.vsCitas.classes;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 @Entity
 @Table(name = "atenciones")
 public class Atencion {
@@ -24,6 +26,7 @@ public class Atencion {
     @Column(nullable = false)
     private EstadoAtencion estado;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 
