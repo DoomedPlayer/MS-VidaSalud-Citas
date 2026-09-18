@@ -1,11 +1,21 @@
-INSERT IGNORE INTO atenciones (id, paciente_id, rut, nombre_paciente, prestacion_id, cupo_id, estado, fecha_creacion)
-VALUES (1, 'paciente1@dominio.com', '11223344-5', 'Juan Pérez', 1, 1, 'SOLICITADA', '2026-09-19 09:00:00')
-ON DUPLICATE KEY UPDATE rut=VALUES(rut), nombre_paciente=VALUES(nombre_paciente), paciente_id=VALUES(paciente_id);
-
-INSERT IGNORE INTO atenciones (id, paciente_id, rut, nombre_paciente, prestacion_id, cupo_id, estado, fecha_creacion)
-VALUES (2, 'paciente2@dominio.com', '99887766-K', 'María González', 2, 2, 'CONFIRMADA', '2026-09-19 09:30:00')
-ON DUPLICATE KEY UPDATE rut=VALUES(rut), nombre_paciente=VALUES(nombre_paciente), paciente_id=VALUES(paciente_id);
-
-INSERT IGNORE INTO atenciones (id, paciente_id, rut, nombre_paciente, prestacion_id, cupo_id, estado, fecha_creacion)
-VALUES (3, 'paciente3@dominio.com', '55667788-1', 'Carlos Silva', 1, 3, 'EN_ESPERA', '2026-09-19 10:00:00')
-ON DUPLICATE KEY UPDATE rut=VALUES(rut), nombre_paciente=VALUES(nombre_paciente), paciente_id=VALUES(paciente_id);
+INSERT IGNORE INTO atenciones (id, paciente_id, rut, nombre_paciente, prestacion_id, cupo_id, estado, fecha_creacion) VALUES
+(1,  '18234567-K', '18234567-K', 'Matías Rojas',       1, 1,  'EN_ATENCION', '2026-09-18 08:00:00'),
+(2,  '19882113-4', '19882113-4', 'Valentina Soto',     2, 2,  'EN_ESPERA',   '2026-09-18 08:15:00'),
+(3,  '14553221-9', '14553221-9', 'Esteban Morales',    3, 3,  'CONFIRMADA',  '2026-09-18 08:30:00'),
+(4,  '15678123-K', '15678123-K', 'Camila Torres',      4, 4,  'CONFIRMADA',  '2026-09-18 08:45:00'),
+(5,  '12345678-5', '12345678-5', 'José Pérez',         5, 5,  'SOLICITADA',  '2026-09-18 09:00:00'),
+(6,  '17654321-0', '17654321-0', 'Francisca López',    1, 6,  'CONFIRMADA',  '2026-09-19 10:00:00'),
+(7,  '16543210-9', '16543210-9', 'Diego González',     2, 7,  'CONFIRMADA',  '2026-09-19 10:15:00'),
+(8,  '18901234-1', '18901234-1', 'Ignacia Silva',      3, 8,  'SOLICITADA',  '2026-09-19 10:30:00'),
+(9,  '19012345-K', '19012345-K', 'Lucas Muñoz',        4, 9,  'SOLICITADA',  '2026-09-20 09:00:00'),
+(10, '14123456-7', '14123456-7', 'Antonia Castro',     5, 10, 'CONFIRMADA',  '2026-09-20 09:30:00'),
+(11, '15234567-8', '15234567-8', 'Benjamín Rojas',     1, 11, 'CONFIRMADA',  '2026-09-21 08:00:00'),
+(12, '16345678-9', '16345678-9', 'Sofía Herrera',      2, 12, 'CONFIRMADA',  '2026-09-21 09:00:00'),
+(13, '17456789-K', '17456789-K', 'Tomás Alarcón',      3, 13, 'SOLICITADA',  '2026-09-21 10:00:00'),
+(14, '18567890-1', '18567890-1', 'Martina Vargas',     1, 14, 'CONFIRMADA',  '2026-09-22 08:00:00'),
+(15, '19678901-2', '19678901-2', 'Joaquín Medina',     2, 15, 'CONFIRMADA',  '2026-09-22 08:30:00'),
+(16, '14789012-3', '14789012-3', 'Emilia Pizarro',     3, 16, 'SOLICITADA',  '2026-09-23 09:00:00'),
+(17, '15890123-4', '15890123-4', 'Agustín Guzmán',     4, 17, 'SOLICITADA',  '2026-09-23 10:00:00'),
+(18, '16901234-5', '16901234-5', 'Trinidad Bravo',     1, 18, 'CONFIRMADA',  '2026-09-24 08:00:00'),
+(19, '17012345-6', '17012345-6', 'Vicente Campos',     2, 19, 'CONFIRMADA',  '2026-09-24 09:00:00'),
+(20, '18123456-7', '18123456-7', 'Catalina Espinoza',  5, 20, 'SOLICITADA',  '2026-09-25 08:00:00');
