@@ -22,6 +22,12 @@ public class Atencion {
     @Column(name = "cupo_id", nullable = false)
     private Long cupoId; 
 
+    @Column(name = "rut")
+    private String rut;
+
+    @Column(name = "nombre_paciente")
+    private String nombrePaciente;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoAtencion estado;
@@ -32,13 +38,15 @@ public class Atencion {
 
     public Atencion() {
     }
-    public Atencion(Long id,String pacienteId,Long prestacionId,Long cupoId,EstadoAtencion estado, LocalDateTime fecha){
+    public Atencion(Long id,String pacienteId,Long prestacionId,Long cupoId,EstadoAtencion estado, LocalDateTime fecha, String rut, String nombre){
         this.id = id;
         this.pacienteId=pacienteId;
         this.prestacionId = prestacionId;
         this.cupoId = cupoId;
         this.estado = estado;
         this.fechaCreacion = fecha;
+        this.rut=rut;
+        this.nombrePaciente=nombre;
     }
     public Long getId(){
         return id;
@@ -73,6 +81,20 @@ public class Atencion {
     }
     public void setFechaCreacion(LocalDateTime fecha){
         this.fechaCreacion=fecha;
+    }
+
+    public String getRut() {
+        return rut;
+    }
+    public void setRut(String rut) {
+        this.rut = rut;
+    }
+
+    public String getNombrePaciente() {
+        return nombrePaciente;
+    }
+    public void setNombrePaciente(String nombrePaciente) {
+        this.nombrePaciente = nombrePaciente;
     }
 
     
