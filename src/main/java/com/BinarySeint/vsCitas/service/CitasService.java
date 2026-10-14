@@ -19,18 +19,18 @@ public class CitasService {
 
     private final AtencionRepository atencionRepository;
     private final CatalogFeignClient catalogClient;
-    private final NotifyClient notifyClient;
+    private final NotificationProducerService notificationProducer;
     private final AuditClient auditClient;
     private final ReportClient reportClient;
 
     public CitasService(AtencionRepository atencionRepository, 
                         CatalogFeignClient catalogClient,
-                        NotifyClient notifyClient, 
+                        NotificationProducerService notificationProducer, 
                         AuditClient auditClient, 
                         ReportClient reportClient) {
         this.atencionRepository = atencionRepository;
         this.catalogClient = catalogClient;
-        this.notifyClient = notifyClient;
+        this.notificationProducer = notificationProducer;
         this.auditClient = auditClient;
         this.reportClient = reportClient;
     }
@@ -44,6 +44,7 @@ public class CitasService {
         eventoReporte.put("estado", guardada.getEstado().name());
         eventoReporte.put("prestacionId", String.valueOf(guardada.getPrestacionId()));
         reportClient.registrarEventoReporte(eventoReporte);
+
         Map<String, Object> eventoCreacion = new HashMap<>();
         eventoCreacion.put("accion", "CREACION_CITA");
         eventoCreacion.put("usuarioId", guardada.getPacienteId());
@@ -80,14 +81,15 @@ public class CitasService {
 
         Map<String, Object> envelope = new HashMap<>();
         envelope.put("traceId", UUID.randomUUID().toString());
+        envelope.put("timestamp", LocalDateTime.now().toString());
         envelope.put("data", actualizada);
 
         if (nuevoEstado == EstadoAtencion.CONFIRMADA) {
-            notifyClient.enviarEmail(envelope);
+            notificationProducer.enviarEmail(envelope);
         } else if (nuevoEstado == EstadoAtencion.EN_ESPERA) {
-            notifyClient.emitirTicket(envelope);
+            notificationProducer.enviarEmail(envelope);
         } else if (nuevoEstado == EstadoAtencion.CERRADA) {
-            notifyClient.generarPdf(envelope);
+            notificationProducer.enviarEmail(envelope);
         }
 
         Map<String, Object> eventoCambio = new HashMap<>();
