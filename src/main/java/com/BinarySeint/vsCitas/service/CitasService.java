@@ -107,6 +107,10 @@ public class CitasService {
             notificationProducer.enviarEmail(envelope); 
             notificationProducer.generarPdf(envelope); 
         }
+        else if (nuevoEstado == EstadoAtencion.CERRADA) {
+            notificationProducer.enviarEmail(envelope);
+        }
+        
 
         Map<String, Object> eventoCambio = new HashMap<>();
         eventoCambio.put("accion", "CAMBIO ESTADO " + actualizada.getEstado().name());
