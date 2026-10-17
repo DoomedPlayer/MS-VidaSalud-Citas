@@ -46,7 +46,7 @@ public class CitasService {
         reportClient.registrarEventoReporte(eventoReporte);
 
         Map<String, Object> eventoCreacion = new HashMap<>();
-        eventoCreacion.put("accion", "CREACION_CITA");
+        eventoCreacion.put("accion", "CREACION CITA");
         eventoCreacion.put("usuarioId", guardada.getPacienteId());
         eventoCreacion.put("entidadId", "Citas_Microservicio");
         eventoCreacion.put("origenIp", "127.0.0.1"); // O la IP real si la capturas
@@ -109,7 +109,7 @@ public class CitasService {
         }
 
         Map<String, Object> eventoCambio = new HashMap<>();
-        eventoCambio.put("accion", "CAMBIO ESTADO" + actualizada.getEstado().name());
+        eventoCambio.put("accion", "CAMBIO ESTADO " + actualizada.getEstado().name());
         eventoCambio.put("usuarioId", "Recepcion");
         eventoCambio.put("entidadId", "Citas_Microservicio");
         eventoCambio.put("origenIp", "127.0.0.1");
