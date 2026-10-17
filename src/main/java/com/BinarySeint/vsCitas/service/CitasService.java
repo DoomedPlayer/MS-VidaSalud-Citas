@@ -51,9 +51,16 @@ public class CitasService {
         eventoCreacion.put("entidadId", "Citas_Microservicio");
         eventoCreacion.put("origenIp", "127.0.0.1"); // O la IP real si la capturas
         eventoCreacion.put("detalles", "Cita solicitada exitosamente.");
-
         auditClient.registrarEventoAuditoria(eventoCreacion);
-                
+
+        Map<String, Object> envelope = new HashMap<>();
+        envelope.put("type", "APPOINTMENT_CREATED");
+        envelope.put("eventId", UUID.randomUUID().toString());
+        envelope.put("traceId", UUID.randomUUID().toString());
+        envelope.put("timestamp", LocalDateTime.now().toString());
+        envelope.put("data", guardada);
+        notificationProducer.enviarEmail(envelope);
+       
         return guardada;
     }
 
@@ -80,20 +87,29 @@ public class CitasService {
         Atencion actualizada = atencionRepository.save(atencion);
 
         Map<String, Object> envelope = new HashMap<>();
+        envelope.put("type", "APPOINTMENT_UPDATED");
+        envelope.put("eventId", UUID.randomUUID().toString());
         envelope.put("traceId", UUID.randomUUID().toString());
         envelope.put("timestamp", LocalDateTime.now().toString());
         envelope.put("data", actualizada);
 
         if (nuevoEstado == EstadoAtencion.CONFIRMADA) {
-            notificationProducer.enviarEmail(envelope);
-        } else if (nuevoEstado == EstadoAtencion.EN_ESPERA) {
-            notificationProducer.enviarEmail(envelope);
-        } else if (nuevoEstado == EstadoAtencion.CERRADA) {
-            notificationProducer.enviarEmail(envelope);
+            notificationProducer.enviarEmail(envelope); 
+        } 
+        else if (nuevoEstado == EstadoAtencion.EN_ESPERA) {
+            notificationProducer.enviarEmail(envelope); 
+            notificationProducer.emitirTicket(envelope); 
+        } 
+        else if (nuevoEstado == EstadoAtencion.EN_ATENCION) {
+            notificationProducer.emitirTicket(envelope); 
+        } 
+        else if (nuevoEstado == EstadoAtencion.CERRADA) {
+            notificationProducer.enviarEmail(envelope); 
+            notificationProducer.generarPdf(envelope); 
         }
 
         Map<String, Object> eventoCambio = new HashMap<>();
-        eventoCambio.put("accion", "CAMBIO_ESTADO_" + actualizada.getEstado().name());
+        eventoCambio.put("accion", "CAMBIO ESTADO" + actualizada.getEstado().name());
         eventoCambio.put("usuarioId", "Recepcion");
         eventoCambio.put("entidadId", "Citas_Microservicio");
         eventoCambio.put("origenIp", "127.0.0.1");
