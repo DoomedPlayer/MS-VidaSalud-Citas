@@ -107,7 +107,7 @@ public class CitasService {
             notificationProducer.enviarEmail(envelope); 
             notificationProducer.generarPdf(envelope); 
         }
-        else if (nuevoEstado == EstadoAtencion.CERRADA) {
+        else if (nuevoEstado == EstadoAtencion.CANCELADA) {
             notificationProducer.enviarEmail(envelope);
         }
         
