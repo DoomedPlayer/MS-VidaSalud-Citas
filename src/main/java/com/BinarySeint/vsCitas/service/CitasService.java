@@ -6,13 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.BinarySeint.vsCitas.classes.Atencion;
 import com.BinarySeint.vsCitas.classes.EstadoAtencion;
-import com.BinarySeint.vsCitas.dto.AuditTimelineEventDTO;
 import com.BinarySeint.vsCitas.dto.CitasEventoDTO;
 import com.BinarySeint.vsCitas.repository.AtencionRepository;
 
@@ -36,7 +34,7 @@ public class CitasService {
 
     @Transactional
     public Atencion crearAtencion(Atencion atencion) {
-       atencion.setEstado(EstadoAtencion.SOLICITADA);
+        atencion.setEstado(EstadoAtencion.SOLICITADA);
         Atencion guardada = atencionRepository.save(atencion);
 
         CitasEventoDTO appointmentEvent = new CitasEventoDTO(
@@ -54,18 +52,6 @@ public class CitasService {
                 guardada.getFechaCreacion()
         );
         kafkaProducer.publicarEventoCita(appointmentEvent);
-
-        AuditTimelineEventDTO auditEvent = new AuditTimelineEventDTO(
-                UUID.randomUUID().toString(),
-                String.valueOf(guardada.getId()),
-                guardada.getPacienteId(),
-                "CREACION_CITA",
-                LocalDateTime.now(),
-                "127.0.0.1",
-                "ms-vidasalud-appointments",
-                "Cita solicitada exitosamente para prestación ID " + guardada.getPrestacionId()
-        );
-        kafkaProducer.publicarEventoAuditoria(auditEvent);
 
         Map<String, Object> envelope = new HashMap<>();
         envelope.put("type", "APPOINTMENT_CREATED");
@@ -140,20 +126,9 @@ public class CitasService {
         );
         kafkaProducer.publicarEventoCita(appointmentEvent);
 
-        AuditTimelineEventDTO auditEvent = new AuditTimelineEventDTO(
-                UUID.randomUUID().toString(),
-                String.valueOf(actualizada.getId()),
-                "Recepcion",
-                "CAMBIO_ESTADO_" + actualizada.getEstado().name(),
-                LocalDateTime.now(),
-                "127.0.0.1",
-                "ms-vidasalud-appointments",
-                "La cita cambió de " + estadoAnterior.name() + " a " + actualizada.getEstado().name()
-        );
-        kafkaProducer.publicarEventoAuditoria(auditEvent);
-
         return actualizada;
     }
+
     public List<Atencion> listarAtenciones(String statusStr, LocalDateTime from, LocalDateTime to) {
         EstadoAtencion estado = null;
         if (statusStr != null && !statusStr.isEmpty()) {
