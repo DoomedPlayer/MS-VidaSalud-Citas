@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.BinarySeint.vsCitas.classes.Atencion;
 import com.BinarySeint.vsCitas.classes.EstadoAtencion;
+import com.BinarySeint.vsCitas.dto.AuditTimelineEventDTO;
+import com.BinarySeint.vsCitas.dto.CitasEventoDTO;
 import com.BinarySeint.vsCitas.repository.AtencionRepository;
 
 @Service
@@ -20,38 +22,50 @@ public class CitasService {
     private final AtencionRepository atencionRepository;
     private final CatalogFeignClient catalogClient;
     private final NotificationProducerService notificationProducer;
-    private final AuditClient auditClient;
-    private final ReportClient reportClient;
+    private final CitasKafkaProducerService kafkaProducer;
 
-    public CitasService(AtencionRepository atencionRepository, 
+    public CitasService(AtencionRepository atencionRepository,
                         CatalogFeignClient catalogClient,
-                        NotificationProducerService notificationProducer, 
-                        AuditClient auditClient, 
-                        ReportClient reportClient) {
+                        NotificationProducerService notificationProducer,
+                        CitasKafkaProducerService kafkaProducer) {
         this.atencionRepository = atencionRepository;
         this.catalogClient = catalogClient;
         this.notificationProducer = notificationProducer;
-        this.auditClient = auditClient;
-        this.reportClient = reportClient;
+        this.kafkaProducer = kafkaProducer;
     }
 
     @Transactional
     public Atencion crearAtencion(Atencion atencion) {
-        atencion.setEstado(EstadoAtencion.SOLICITADA);
+       atencion.setEstado(EstadoAtencion.SOLICITADA);
         Atencion guardada = atencionRepository.save(atencion);
-    
-        Map<String, String> eventoReporte = new HashMap<>();
-        eventoReporte.put("estado", guardada.getEstado().name());
-        eventoReporte.put("prestacionId", String.valueOf(guardada.getPrestacionId()));
-        reportClient.registrarEventoReporte(eventoReporte);
 
-        Map<String, Object> eventoCreacion = new HashMap<>();
-        eventoCreacion.put("accion", "CREACION CITA");
-        eventoCreacion.put("usuarioId", guardada.getPacienteId());
-        eventoCreacion.put("entidadId", "Citas_Microservicio");
-        eventoCreacion.put("origenIp", "127.0.0.1"); // O la IP real si la capturas
-        eventoCreacion.put("detalles", "Cita solicitada exitosamente.");
-        auditClient.registrarEventoAuditoria(eventoCreacion);
+        CitasEventoDTO appointmentEvent = new CitasEventoDTO(
+                UUID.randomUUID().toString(),
+                "CITA_CREADA",
+                LocalDateTime.now(),
+                guardada.getId(),
+                guardada.getPacienteId(),
+                guardada.getRut(),
+                guardada.getNombrePaciente(),
+                guardada.getPrestacionId(),
+                guardada.getCupoId(),
+                null,
+                guardada.getEstado().name(),
+                guardada.getFechaCreacion()
+        );
+        kafkaProducer.publicarEventoCita(appointmentEvent);
+
+        AuditTimelineEventDTO auditEvent = new AuditTimelineEventDTO(
+                UUID.randomUUID().toString(),
+                String.valueOf(guardada.getId()),
+                guardada.getPacienteId(),
+                "CREACION_CITA",
+                LocalDateTime.now(),
+                "127.0.0.1",
+                "ms-vidasalud-appointments",
+                "Cita solicitada exitosamente para prestación ID " + guardada.getPrestacionId()
+        );
+        kafkaProducer.publicarEventoAuditoria(auditEvent);
 
         Map<String, Object> envelope = new HashMap<>();
         envelope.put("type", "APPOINTMENT_CREATED");
@@ -60,7 +74,7 @@ public class CitasService {
         envelope.put("timestamp", LocalDateTime.now().toString());
         envelope.put("data", guardada);
         notificationProducer.enviarEmail(envelope);
-       
+
         return guardada;
     }
 
@@ -72,9 +86,12 @@ public class CitasService {
     @Transactional
     public Atencion cambiarEstado(Long id, String nuevoEstadoStr) {
         Atencion atencion = obtenerAtencion(id);
+        EstadoAtencion estadoAnterior = atencion.getEstado();
         EstadoAtencion nuevoEstado = EstadoAtencion.valueOf(nuevoEstadoStr.toUpperCase());
 
-        if (nuevoEstado == EstadoAtencion.EN_ATENCION && atencion.getEstado() != EstadoAtencion.CONFIRMADA && atencion.getEstado() != EstadoAtencion.EN_ESPERA) {
+        if (nuevoEstado == EstadoAtencion.EN_ATENCION
+                && estadoAnterior != EstadoAtencion.CONFIRMADA
+                && estadoAnterior != EstadoAtencion.EN_ESPERA) {
             throw new IllegalStateException("El paciente debe estar confirmado o en espera antes de pasar a EN_ATENCIÓN.");
         }
 
@@ -94,36 +111,46 @@ public class CitasService {
         envelope.put("data", actualizada);
 
         if (nuevoEstado == EstadoAtencion.CONFIRMADA) {
-            notificationProducer.enviarEmail(envelope); 
-        } 
-        else if (nuevoEstado == EstadoAtencion.EN_ESPERA) {
-            notificationProducer.enviarEmail(envelope); 
-            notificationProducer.emitirTicket(envelope); 
-        } 
-        else if (nuevoEstado == EstadoAtencion.EN_ATENCION) {
-            notificationProducer.emitirTicket(envelope); 
-        } 
-        else if (nuevoEstado == EstadoAtencion.CERRADA) {
-            notificationProducer.enviarEmail(envelope); 
-            notificationProducer.generarPdf(envelope); 
-        }
-        else if (nuevoEstado == EstadoAtencion.CANCELADA) {
+            notificationProducer.enviarEmail(envelope);
+        } else if (nuevoEstado == EstadoAtencion.EN_ESPERA) {
+            notificationProducer.enviarEmail(envelope);
+            notificationProducer.emitirTicket(envelope);
+        } else if (nuevoEstado == EstadoAtencion.EN_ATENCION) {
+            notificationProducer.emitirTicket(envelope);
+        } else if (nuevoEstado == EstadoAtencion.CERRADA) {
+            notificationProducer.enviarEmail(envelope);
+            notificationProducer.generarPdf(envelope);
+        } else if (nuevoEstado == EstadoAtencion.CANCELADA) {
             notificationProducer.enviarEmail(envelope);
         }
-        
 
-        Map<String, Object> eventoCambio = new HashMap<>();
-        eventoCambio.put("accion", "CAMBIO ESTADO " + actualizada.getEstado().name());
-        eventoCambio.put("usuarioId", "Recepcion");
-        eventoCambio.put("entidadId", "Citas_Microservicio");
-        eventoCambio.put("origenIp", "127.0.0.1");
-        eventoCambio.put("detalles", "La cita cambió de estado a " + actualizada.getEstado().name());
+        CitasEventoDTO appointmentEvent = new CitasEventoDTO(
+                UUID.randomUUID().toString(),
+                "APPOINTMENT_STATUS_CHANGED",
+                LocalDateTime.now(),
+                actualizada.getId(),
+                actualizada.getPacienteId(),
+                actualizada.getRut(),
+                actualizada.getNombrePaciente(),
+                actualizada.getPrestacionId(),
+                actualizada.getCupoId(),
+                estadoAnterior.name(),
+                actualizada.getEstado().name(),
+                actualizada.getFechaCreacion()
+        );
+        kafkaProducer.publicarEventoCita(appointmentEvent);
 
-        auditClient.registrarEventoAuditoria(eventoCambio);
-
-        Map<String, String> eventoReporte = new HashMap<>();
-        eventoReporte.put("estado", actualizada.getEstado().name());
-        reportClient.registrarEventoReporte(eventoReporte);
+        AuditTimelineEventDTO auditEvent = new AuditTimelineEventDTO(
+                UUID.randomUUID().toString(),
+                String.valueOf(actualizada.getId()),
+                "Recepcion",
+                "CAMBIO_ESTADO_" + actualizada.getEstado().name(),
+                LocalDateTime.now(),
+                "127.0.0.1",
+                "ms-vidasalud-appointments",
+                "La cita cambió de " + estadoAnterior.name() + " a " + actualizada.getEstado().name()
+        );
+        kafkaProducer.publicarEventoAuditoria(auditEvent);
 
         return actualizada;
     }
